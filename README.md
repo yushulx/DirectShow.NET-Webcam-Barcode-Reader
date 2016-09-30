@@ -14,6 +14,10 @@ The sample demonstrates how to implement a simple C# barcode reader on Windows u
 5. Connect a USB camera to your PC.
 6. Build and run the project.
 
+## Blog
+[Read Barcode from Webcam Viewer with DirectShow.NET][4]
+
 [1]:http://directshownet.sourceforge.net/index.html
 [2]:http://www.dynamsoft.com/Products/Dynamic-Barcode-Reader.aspx
 [3]:https://sourceforge.net/projects/directshownet/files/
+[4]:http://www.codepool.biz/directshow-dotnet-webcam-read-barcode.html
