@@ -103,7 +103,8 @@ namespace BarcodeReaderApp
             {
                 //DsDevice dev = devices[0] as DsDevice;
                 //MessageBox.Show("Device: " + dev.Name);
-                CaptureVideo();
+                //CaptureVideo();
+                CaptureVideo(devices[1]);
             }        
         }
 
@@ -137,6 +138,77 @@ namespace BarcodeReaderApp
             {
                 textBox1.AppendText(result.BarcodeText + "\n");
                 textBox1.AppendText("\n");
+            }
+        }
+
+        public void CaptureVideo(DsDevice device)
+        {
+            pictureBox1.Image = null;
+            int hr = 0;
+            IBaseFilter sourceFilter = null;
+            ISampleGrabber sampleGrabber = null;
+
+            try
+            {
+                // Get DirectShow interfaces
+                GetInterfaces();
+
+                // Attach the filter graph to the capture graph
+                hr = this.captureGraphBuilder.SetFiltergraph(this.graphBuilder);
+                DsError.ThrowExceptionForHR(hr);
+
+                // Use the system device enumerator and class enumerator to find
+                // a video capture/preview device, such as a desktop USB video camera.
+                sourceFilter = SelectCaptureDevice(device);
+                // Add Capture filter to graph.
+                hr = this.graphBuilder.AddFilter(sourceFilter, "Video Capture");
+                DsError.ThrowExceptionForHR(hr);
+
+                // Initialize SampleGrabber.
+                sampleGrabber = new SampleGrabber() as ISampleGrabber;
+                // Configure SampleGrabber. Add preview callback.
+                ConfigureSampleGrabber(sampleGrabber);
+                // Add SampleGrabber to graph.
+                hr = this.graphBuilder.AddFilter(sampleGrabber as IBaseFilter, "Frame Callback");
+                DsError.ThrowExceptionForHR(hr);
+
+                // Configure preview settings.
+                SetConfigParams(this.captureGraphBuilder, sourceFilter, _previewFPS, _previewWidth, _previewHeight);
+
+                // Render the preview
+                hr = this.captureGraphBuilder.RenderStream(PinCategory.Preview, MediaType.Video, sourceFilter, (sampleGrabber as IBaseFilter), null);
+                DsError.ThrowExceptionForHR(hr);
+
+                SaveSizeInfo(sampleGrabber);
+
+                // Set video window style and position
+                SetupVideoWindow();
+
+                // Add our graph to the running object table, which will allow
+                // the GraphEdit application to "spy" on our graph
+                rot = new DsROTEntry(this.graphBuilder);
+
+                // Start previewing video data
+                hr = this.mediaControl.Run();
+                DsError.ThrowExceptionForHR(hr);
+            }
+            catch
+            {
+                MessageBox.Show("An unrecoverable error has occurred.");
+            }
+            finally
+            {
+                if (sourceFilter != null)
+                {
+                    Marshal.ReleaseComObject(sourceFilter);
+                    sourceFilter = null;
+                }
+
+                if (sampleGrabber != null)
+                {
+                    Marshal.ReleaseComObject(sampleGrabber);
+                    sampleGrabber = null;
+                }
             }
         }
 
@@ -209,6 +281,14 @@ namespace BarcodeReaderApp
                     sampleGrabber = null;
                 }
             }
+        }
+
+        public IBaseFilter SelectCaptureDevice(DsDevice device)
+        {
+            object source = null;
+            Guid iid = typeof(IBaseFilter).GUID;
+            device.Mon.BindToObject(null, null, ref iid, out source);
+            return (IBaseFilter)source;
         }
 
         public IBaseFilter FindCaptureDevice()

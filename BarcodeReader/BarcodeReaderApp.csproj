@@ -34,7 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DirectShowLib-2005">
-      <HintPath>G:\DirectShowLibV2-1\lib\DirectShowLib-2005.dll</HintPath>
+      <HintPath>G:\zip\DirectShowLibV2-1\lib\DirectShowLib-2005.dll</HintPath>
     </Reference>
     <Reference Include="Dynamsoft.BarcodeReader, Version=4.2.0.401, Culture=neutral, PublicKeyToken=ad0967c36e09320a, processorArchitecture=MSIL">
       <HintPath>..\packages\Dynamsoft.DotNet.Barcode.4.2.0\lib\net40\Dynamsoft.BarcodeReader.dll</HintPath>
