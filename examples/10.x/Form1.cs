@@ -1,24 +1,27 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Diagnostics;
+using Dynamsoft.DBR;
+using Dynamsoft.Core;
+using Dynamsoft.CVR;
+using Dynamsoft.License;
 
 using DirectShowLib;
-using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Drawing.Imaging;
-using Dynamsoft.DBR;
-namespace App
+
+namespace BarcodeReaderApp
 {
     public partial class Form1 : Form, ISampleGrabberCB
     {
-        //private BarcodeReader _barcodeReader;
+        private CaptureVisionRouter cvr;
         private int _previewWidth = 640;
         private int _previewHeight = 480;
         private int _previewStride = 0;
         private int _previewFPS = 30;
         private volatile bool isFinished = true;
+        private bool isCameraMode = false;
 
         IVideoWindow videoWindow = null;
         IMediaControl mediaControl = null;
@@ -32,11 +35,17 @@ namespace App
             InitializeComponent();
 
             // Initialize Dynamsoft Barcode Reader
-            //_barcodeReader = new BarcodeReader();
+            string errorMsg;
+            int errorCode = LicenseManager.InitLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ==", out errorMsg);
+            if (errorCode != (int)EnumErrorCode.EC_OK)
+                Console.WriteLine("License initialization error: " + errorMsg);
+
+            cvr = new CaptureVisionRouter();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
+            isCameraMode = false;
             using (OpenFileDialog dlg = new OpenFileDialog())
             {
                 dlg.Title = "Open Image";
@@ -45,10 +54,10 @@ namespace App
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
                     Bitmap bitmap = null;
-
+                    
                     try
                     {
-                        bitmap = new Bitmap(dlg.FileName);
+                        bitmap =  new Bitmap(dlg.FileName);
                     }
                     catch (Exception exception)
                     {
@@ -57,23 +66,14 @@ namespace App
                     }
 
                     pictureBox1.Image = new Bitmap(dlg.FileName);
+                    ReadBarcode((Bitmap)pictureBox1.Image);
                 }
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            if (pictureBox1.Image == null)
-            {
-                MessageBox.Show("Please load an image!");
-                return;
-            }
-
-            ReadBarcode((Bitmap)pictureBox1.Image);
-        }
-
         private void button3_Click(object sender, EventArgs e)
         {
+            isCameraMode = true;
             string button_text = button3.Text;
             if (button_text.Equals("Start Webcam"))
             {
@@ -84,7 +84,7 @@ namespace App
             {
                 button3.Text = "Start Webcam";
                 StopCamera();
-            }
+            }  
         }
 
         private void StartCamera()
@@ -101,7 +101,8 @@ namespace App
             {
                 //DsDevice dev = devices[0] as DsDevice;
                 //MessageBox.Show("Device: " + dev.Name);
-                CaptureVideo();
+                //CaptureVideo();
+                CaptureVideo(devices[0]);
             }
         }
 
@@ -111,31 +112,202 @@ namespace App
             CloseInterfaces();
         }
 
+        private Bitmap EnsureNonIndexedFormat(Bitmap original)
+        {
+            if (original.PixelFormat == PixelFormat.Format24bppRgb ||
+                original.PixelFormat == PixelFormat.Format32bppArgb ||
+                original.PixelFormat == PixelFormat.Format32bppPArgb)
+            {
+                return original;
+            }
+
+            // Convert to 24bppRgb format
+            Bitmap newBitmap = new Bitmap(original.Width, original.Height, PixelFormat.Format24bppRgb);
+            using (Graphics g = Graphics.FromImage(newBitmap))
+            {
+                g.DrawImage(original, 0, 0);
+            }
+
+            return newBitmap;
+        }
+
+        private void GetBitmapData(Bitmap bitmap, out byte[] bytes, out int width, out int height, out int stride, out PixelFormat pixelFormat)
+        {
+            // Lock the bitmap's bits
+            Rectangle rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            BitmapData bmpData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
+
+            // Get the address of the first line
+            IntPtr ptr = bmpData.Scan0;
+
+            // Declare an array to hold the bytes of the bitmap
+            int bytesCount = Math.Abs(bmpData.Stride) * bitmap.Height;
+            bytes = new byte[bytesCount];
+
+            // Copy the RGB values into the array
+            System.Runtime.InteropServices.Marshal.Copy(ptr, bytes, 0, bytesCount);
+
+            // Retrieve the data
+            width = bitmap.Width;
+            height = bitmap.Height;
+            stride = bmpData.Stride;
+            pixelFormat = bitmap.PixelFormat;
+
+            // Unlock the bits
+            bitmap.UnlockBits(bmpData);
+        }
+
         private void ReadBarcode(Bitmap bitmap)
         {
-            // Read barcodes with Dynamsoft Barcode Reader
-            Stopwatch sw = Stopwatch.StartNew();
-            sw.Start();
-            //BarcodeResult[] results = _barcodeReader.DecodeBitmap(bitmap);
-            sw.Stop();
-            Console.WriteLine(sw.Elapsed.TotalMilliseconds + "ms");
-            bitmap.Dispose();
+            Bitmap nonIndexedBitmap = EnsureNonIndexedFormat(bitmap);
 
-            // Clear previous results
+            // Convert Bitmap to ImageData
+            byte[] bytes;  
+            int width;
+            int height;
+            int stride;
+            PixelFormat pixelFormat; 
+            GetBitmapData(nonIndexedBitmap, out bytes, out width, out height, out stride, out pixelFormat);
+
+            EnumImagePixelFormat format = EnumImagePixelFormat.IPF_RGB_888;
+            switch (pixelFormat)
+            {
+                case PixelFormat.Format24bppRgb:
+                    format = EnumImagePixelFormat.IPF_RGB_888;
+                    break;
+                case PixelFormat.Format32bppArgb:
+                    format = EnumImagePixelFormat.IPF_ARGB_8888;
+                    break;
+                default:
+                    MessageBox.Show("Unsupported pixel format.");
+                    return;
+            }
+
+            ImageData data = new ImageData(bytes, width, height, stride, format);
+            CapturedResult result = cvr.Capture(data, PresetTemplate.PT_READ_BARCODES);
+
             textBox1.Clear();
+            if (result == null)
+            {
+                MessageBox.Show("No barcode detected.");
+            }
+            else if (result.GetErrorCode() != 0)
+            {
+                MessageBox.Show("Error: " + result.GetErrorCode() + ", " + result.GetErrorString());
+            }
+            else
+            {
+                DecodedBarcodesResult barcodesResult = result.GetDecodedBarcodesResult();
+                if (barcodesResult != null)
+                {
+                    BarcodeResultItem[] items = barcodesResult.GetItems();
+                    foreach (BarcodeResultItem barcodeItem in items)
+                    {
+                        Console.WriteLine("Result " + (Array.IndexOf(items, barcodeItem) + 1));
+                        Console.WriteLine("Barcode Format: " + barcodeItem.GetFormatString());
+                        Console.WriteLine("Barcode Text: " + barcodeItem.GetText());
+                    }
 
-            //if (results == null)
-            //{
-            //    textBox1.Text = "No barcode detected!";
-            //    return;
-            //}
+                    using (Graphics g = Graphics.FromImage(nonIndexedBitmap))
+                    {
+                        foreach (BarcodeResultItem barcodeItem in items)
+                        {
+                            string output = "Text: " + barcodeItem.GetFormatString() + Environment.NewLine + "Format: " + barcodeItem.GetFormatString() + Environment.NewLine;
+                            Dynamsoft.Core.Point[] points = barcodeItem.GetLocation().points;
 
-            //// Display barcode results
-            //foreach (BarcodeResult result in results)
-            //{
-            //    textBox1.AppendText(result.BarcodeText + "\n");
-            //    textBox1.AppendText("\n");
-            //}
+                            // Draw lines based on four points
+                            for (int i = 0; i < points.Length; i++)
+                            {
+                                Dynamsoft.Core.Point p1 = points[i];
+                                Dynamsoft.Core.Point p2 = points[(i + 1) % points.Length];
+                                g.DrawLine(new Pen(Color.Red, 3), p1[0], p1[1], p2[0], p2[1]);
+                            }
+
+                            textBox1.AppendText(output);
+                        }
+                    }
+
+                    if (!isCameraMode)
+                    {
+                        pictureBox1.Image = nonIndexedBitmap;
+                    }
+                }
+                else
+                {
+                    textBox1.AppendText("No barcode detected!" + Environment.NewLine);
+                }
+            }
+        }
+
+        public void CaptureVideo(DsDevice device)
+        {
+            pictureBox1.Image = null;
+            int hr = 0;
+            IBaseFilter sourceFilter = null;
+            ISampleGrabber sampleGrabber = null;
+
+            try
+            {
+                // Get DirectShow interfaces
+                GetInterfaces();
+
+                // Attach the filter graph to the capture graph
+                hr = this.captureGraphBuilder.SetFiltergraph(this.graphBuilder);
+                DsError.ThrowExceptionForHR(hr);
+
+                // Use the system device enumerator and class enumerator to find
+                // a video capture/preview device, such as a desktop USB video camera.
+                sourceFilter = SelectCaptureDevice(device);
+                // Add Capture filter to graph.
+                hr = this.graphBuilder.AddFilter(sourceFilter, "Video Capture");
+                DsError.ThrowExceptionForHR(hr);
+
+                // Initialize SampleGrabber.
+                sampleGrabber = new SampleGrabber() as ISampleGrabber;
+                // Configure SampleGrabber. Add preview callback.
+                ConfigureSampleGrabber(sampleGrabber);
+                // Add SampleGrabber to graph.
+                hr = this.graphBuilder.AddFilter(sampleGrabber as IBaseFilter, "Frame Callback");
+                DsError.ThrowExceptionForHR(hr);
+
+                // Configure preview settings.
+                SetConfigParams(this.captureGraphBuilder, sourceFilter, _previewFPS, _previewWidth, _previewHeight);
+
+                // Render the preview
+                hr = this.captureGraphBuilder.RenderStream(PinCategory.Preview, MediaType.Video, sourceFilter, (sampleGrabber as IBaseFilter), null);
+                DsError.ThrowExceptionForHR(hr);
+
+                SaveSizeInfo(sampleGrabber);
+
+                // Set video window style and position
+                SetupVideoWindow();
+
+                // Add our graph to the running object table, which will allow
+                // the GraphEdit application to "spy" on our graph
+                rot = new DsROTEntry(this.graphBuilder);
+
+                // Start previewing video data
+                hr = this.mediaControl.Run();
+                DsError.ThrowExceptionForHR(hr);
+            }
+            catch
+            {
+                MessageBox.Show("An unrecoverable error has occurred.");
+            }
+            finally
+            {
+                if (sourceFilter != null)
+                {
+                    Marshal.ReleaseComObject(sourceFilter);
+                    sourceFilter = null;
+                }
+
+                if (sampleGrabber != null)
+                {
+                    Marshal.ReleaseComObject(sampleGrabber);
+                    sampleGrabber = null;
+                }
+            }
         }
 
         public void CaptureVideo()
@@ -207,6 +379,14 @@ namespace App
                     sampleGrabber = null;
                 }
             }
+        }
+
+        public IBaseFilter SelectCaptureDevice(DsDevice device)
+        {
+            object source = null;
+            Guid iid = typeof(IBaseFilter).GUID;
+            device.Mon.BindToObject(null, null, ref iid, out source);
+            return (IBaseFilter)source;
         }
 
         public IBaseFilter FindCaptureDevice()
@@ -435,7 +615,7 @@ namespace App
                 PixelFormat.Format24bppRgb, pBuffer);
             v.RotateFlip(RotateFlipType.Rotate180FlipX);
             if (isFinished)
-            {
+            {    
                 this.BeginInvoke((MethodInvoker)delegate
                 {
                     isFinished = false;
