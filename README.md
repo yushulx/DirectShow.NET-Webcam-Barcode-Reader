@@ -1,23 +1,15 @@
 # DirectShow.NET Webcam Barcode Reader
-
-The sample demonstrates how to implement a simple C# barcode reader on Windows using [DirectShow.NET][1] and [Dynamsoft Barcode Reader SDK][2] (DBR).
-
-![DirectShow.NET Webcam barcode reader](http://www.codepool.biz/wp-content/uploads/2016/09/directshow.PNG)
+This repository provides a C# demonstration for creating barcode reader applications on Windows platforms, utilizing [DirectShow.NET](https://directshownet.sourceforge.net/docs.html) for webcam access and [Dynamsoft Barcode Reader SDK](https://www.dynamsoft.com/barcode-reader/sdk-desktop-server/) barcode decoding.
 
 ## Getting Started
-1. Download [DirectShow.NET][3].
-2. Import the Project to **Visual Studio 2015**.
-3. Add **DBR** to project via **Nuget**.
+1. Obtain a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense) of Dynamsoft Barcode Reader SDK, and set the license key in `Form1.cs`:
 
-    ![install DBR via nuget](http://www.codepool.biz/wp-content/uploads/2016/09/nuget-install-dbr.PNG)
-4. Add **DirectShowLib-2005.dll** to reference.
-5. Connect a USB camera to your PC.
-6. Build and run the project.
+    ```csharp
+    EnumErrorCode errorCode = Dynamsoft.DBR.BarcodeReader.InitLicense("LICENSE-KEY", out errorMsg);
+    ```
+2. Build and run the project using Visual Studio.
+
+    ![DirectShow.NET Webcam barcode reader](http://www.dynamsoft.com/codepool/img/2024/06/directshow-webcam-dotnet-windows-barcode-reader.jpg)
 
 ## Blog
-[Read Barcode from Webcam Viewer with DirectShow.NET][4]
-
-[1]:http://directshownet.sourceforge.net/index.html
-[2]:http://www.dynamsoft.com/Products/Dynamic-Barcode-Reader.aspx
-[3]:https://sourceforge.net/projects/directshownet/files/
-[4]:http://www.codepool.biz/directshow-dotnet-webcam-read-barcode.html
+[C# Webcam Barcode Reader: A DirectShow.NET Implementation](https://www.dynamsoft.com/codepool/directshow-dotnet-webcam-read-barcode.html)
