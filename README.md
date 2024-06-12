@@ -4,10 +4,18 @@ This repository provides a C# demonstration for creating barcode reader applicat
 ## Getting Started
 1. Obtain a [30-day free trial license](https://www.dynamsoft.com/customer/license/trialLicense) of Dynamsoft Barcode Reader SDK, and set the license key in `Form1.cs`:
 
+    [v9.x](./examples/9.x/Form1.cs)
     ```csharp
     EnumErrorCode errorCode = Dynamsoft.DBR.BarcodeReader.InitLicense("LICENSE-KEY", out errorMsg);
     ```
-2. Build and run the project using Visual Studio.
+
+    [v10.x](./examples/10.x/Form1.cs)
+
+    ```csharp
+    int errorCode = LicenseManager.InitLicense("LICENSE-KEY", out errorMsg);
+    ```
+   
+3. Build and run the project using Visual Studio.
 
     ![DirectShow.NET Webcam barcode reader](http://www.dynamsoft.com/codepool/img/2024/06/directshow-webcam-dotnet-windows-barcode-reader.jpg)
 
