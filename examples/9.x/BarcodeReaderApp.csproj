@@ -1,6 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project ToolsVersion="14.0" DefaultTargets="Build"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+    Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -51,15 +53,20 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DirectShowLib-2005, Version=2.1.0.26626, Culture=neutral, PublicKeyToken=67e7b740cdfc2d3f, processorArchitecture=MSIL">
+    <Reference
+      Include="DirectShowLib-2005, Version=2.1.0.26626, Culture=neutral, PublicKeyToken=67e7b740cdfc2d3f, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\DirectShowLib-2005.dll</HintPath>
     </Reference>
-    <Reference Include="Dynamsoft.BarcodeReader, Version=9.6.40.220, Culture=neutral, PublicKeyToken=ad0967c36e09320a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\lib\net40\Dynamsoft.BarcodeReader.dll</HintPath>
+    <Reference
+      Include="Dynamsoft.BarcodeReader, Version=9.6.40.220, Culture=neutral, PublicKeyToken=ad0967c36e09320a, processorArchitecture=MSIL">
+      <HintPath>packages\Dynamsoft.DotNet.Barcode.9.6.40.1\lib\net40\Dynamsoft.BarcodeReader.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="DynamsoftCommon, Version=1.1.0.0, Culture=neutral, PublicKeyToken=ad0967c36e09320a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\lib\net40\DynamsoftCommon.dll</HintPath>
+    <Reference
+      Include="DynamsoftCommon, Version=1.1.0.0, Culture=neutral, PublicKeyToken=ad0967c36e09320a, processorArchitecture=MSIL">
+      <HintPath>packages\Dynamsoft.DotNet.Barcode.9.6.40.1\lib\net40\DynamsoftCommon.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -122,13 +129,22 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets" Condition="Exists('..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets')" />
+  <Import
+    Project="..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets"
+    Condition="Exists('..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use
+        NuGet Package Restore to download them. For more information, see
+        http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets'))" />
+    <Error
+      Condition="!Exists('packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets')"
+      Text="$([System.String]::Format('$(ErrorText)', 'packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets'))" />
   </Target>
+  <Import
+    Project="packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets"
+    Condition="Exists('packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
