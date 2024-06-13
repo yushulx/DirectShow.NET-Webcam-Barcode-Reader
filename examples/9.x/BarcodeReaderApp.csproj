@@ -129,9 +129,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import
-    Project="..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets"
-    Condition="Exists('..\packages\Dynamsoft.DotNet.Barcode.9.6.40.1\build\Dynamsoft.DotNet.Barcode.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use
