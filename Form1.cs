@@ -12,6 +12,10 @@ using Dynamsoft.Core;
 using Dynamsoft.CVR;
 using Dynamsoft.License;
 
+using ZXing;
+using ZXing.Common;
+using System.Reflection;
+
 namespace BarcodeReaderApp
 {
     public partial class Form1 : Form, ISampleGrabberCB
@@ -23,6 +27,16 @@ namespace BarcodeReaderApp
         private int _previewFPS = 30;
         private volatile bool isFinished = true;
         private bool isCameraMode = false;
+
+        ZXing.BarcodeReader reader = new ZXing.BarcodeReader()
+        {
+            AutoRotate = true,
+            Options = new DecodingOptions
+            {
+                TryHarder = true,
+                
+            }
+        };
 
         IVideoWindow videoWindow = null;
         IMediaControl mediaControl = null;
@@ -161,83 +175,118 @@ namespace BarcodeReaderApp
         private void ReadBarcode(Bitmap bitmap)
         {
             Bitmap nonIndexedBitmap = EnsureNonIndexedFormat(bitmap);
-
-            // Convert Bitmap to ImageData
-            byte[] bytes;  
-            int width;
-            int height;
-            int stride;
-            PixelFormat pixelFormat; 
-            GetBitmapData(nonIndexedBitmap, out bytes, out width, out height, out stride, out pixelFormat);
-
-            EnumImagePixelFormat format = EnumImagePixelFormat.IPF_RGB_888;
-            switch (pixelFormat)
-            {
-                case PixelFormat.Format24bppRgb:
-                    format = EnumImagePixelFormat.IPF_RGB_888;
-                    break;
-                case PixelFormat.Format32bppArgb:
-                    format = EnumImagePixelFormat.IPF_ARGB_8888;
-                    break;
-                default:
-                    MessageBox.Show("Unsupported pixel format.");
-                    return;
-            }
-
-            ImageData data = new ImageData(bytes, width, height, stride, format);
-            CapturedResult result = cvr.Capture(data, PresetTemplate.PT_READ_BARCODES);
-
             textBox1.Clear();
-            if (result == null)
+
+            if (comboBox1.SelectedIndex == 0)
             {
-                MessageBox.Show("No barcode detected.");
-            }
-            else if (result.GetErrorCode() != 0)
-            {
-                MessageBox.Show("Error: " + result.GetErrorCode() + ", " + result.GetErrorString());
-            }
-            else
-            {
-                DecodedBarcodesResult barcodesResult = result.GetDecodedBarcodesResult();
-                if (barcodesResult != null)
+                // Convert Bitmap to ImageData
+                byte[] bytes;
+                int width;
+                int height;
+                int stride;
+                PixelFormat pixelFormat;
+                GetBitmapData(nonIndexedBitmap, out bytes, out width, out height, out stride, out pixelFormat);
+
+                EnumImagePixelFormat format = EnumImagePixelFormat.IPF_RGB_888;
+                switch (pixelFormat)
                 {
-                    BarcodeResultItem[] items = barcodesResult.GetItems();
-                    foreach (BarcodeResultItem barcodeItem in items)
-                    {
-                        Console.WriteLine("Result " + (Array.IndexOf(items, barcodeItem) + 1));
-                        Console.WriteLine("Barcode Format: " + barcodeItem.GetFormatString());
-                        Console.WriteLine("Barcode Text: " + barcodeItem.GetText());
-                    }
-
-                    using (Graphics g = Graphics.FromImage(nonIndexedBitmap))
-                    {
-                        foreach (BarcodeResultItem barcodeItem in items)
-                        {
-                            string output = "Text: " + barcodeItem.GetFormatString() + Environment.NewLine + "Format: " + barcodeItem.GetFormatString() + Environment.NewLine;
-                            Dynamsoft.Core.Point[] points = barcodeItem.GetLocation().points;
-
-                            // Draw lines based on four points
-                            for (int i = 0; i < points.Length; i++)
-                            {
-                                Dynamsoft.Core.Point p1 = points[i];
-                                Dynamsoft.Core.Point p2 = points[(i + 1) % points.Length];
-                                g.DrawLine(new Pen(Color.Red, 3), p1[0], p1[1], p2[0], p2[1]);
-                            }
-
-                            textBox1.AppendText(output);
-                        }
-                    }
-
-                    if (!isCameraMode)
-                    {
-                        pictureBox1.Image = nonIndexedBitmap;
-                    }
+                    case PixelFormat.Format24bppRgb:
+                        format = EnumImagePixelFormat.IPF_RGB_888;
+                        break;
+                    case PixelFormat.Format32bppArgb:
+                        format = EnumImagePixelFormat.IPF_ARGB_8888;
+                        break;
+                    default:
+                        MessageBox.Show("Unsupported pixel format.");
+                        return;
                 }
-                else
+
+                ImageData data = new ImageData(bytes, width, height, stride, format);
+                CapturedResult result = cvr.Capture(data, PresetTemplate.PT_READ_BARCODES);
+
+                
+                if (result == null)
                 {
                     textBox1.AppendText("No barcode detected!" + Environment.NewLine);
                 }
+                else if (result.GetErrorCode() != 0)
+                {
+                    textBox1.AppendText("Error: " + result.GetErrorCode() + ", " + result.GetErrorString());
+                }
+                else
+                {
+                    DecodedBarcodesResult barcodesResult = result.GetDecodedBarcodesResult();
+                    if (barcodesResult != null)
+                    {
+                        BarcodeResultItem[] items = barcodesResult.GetItems();
+                        foreach (BarcodeResultItem barcodeItem in items)
+                        {
+                            Console.WriteLine("Result " + (Array.IndexOf(items, barcodeItem) + 1));
+                            Console.WriteLine("Barcode Format: " + barcodeItem.GetFormatString());
+                            Console.WriteLine("Barcode Text: " + barcodeItem.GetText());
+                        }
+
+                        using (Graphics g = Graphics.FromImage(nonIndexedBitmap))
+                        {
+                            foreach (BarcodeResultItem barcodeItem in items)
+                            {
+                                string output = "Text: " + barcodeItem.GetText() + Environment.NewLine + "Format: " + barcodeItem.GetFormatString() + Environment.NewLine;
+                                Dynamsoft.Core.Point[] points = barcodeItem.GetLocation().points;
+
+                                // Draw lines based on four points
+                                for (int i = 0; i < points.Length; i++)
+                                {
+                                    Dynamsoft.Core.Point p1 = points[i];
+                                    Dynamsoft.Core.Point p2 = points[(i + 1) % points.Length];
+                                    g.DrawLine(new Pen(Color.Red, 3), p1[0], p1[1], p2[0], p2[1]);
+                                }
+
+                                textBox1.AppendText(output);
+                            }
+                        }
+                        
+                    }
+                    else
+                    {
+                        textBox1.AppendText("No barcode detected!" + Environment.NewLine);
+                    }
+                }
             }
+            else
+            {
+                Result[] zxingResults = reader.DecodeMultiple(bitmap);
+                if (zxingResults == null)
+                {
+                    textBox1.AppendText("No barcode detected!" + Environment.NewLine);
+                    return;
+                }
+          
+                using (Graphics g = Graphics.FromImage(nonIndexedBitmap))
+                {
+
+                    foreach (var res in zxingResults)
+                    {
+                        string output  = "Text: " + res.Text + Environment.NewLine + "Format: " + res.BarcodeFormat.ToString() + Environment.NewLine;
+
+                        for (int i = 0; i < res.ResultPoints.Length; i++)
+                        {
+                            ResultPoint p1 = res.ResultPoints[i];
+                            ResultPoint p2 = res.ResultPoints[(i + 1) % res.ResultPoints.Length];
+                            g.DrawLine(new Pen(Color.Red, 3), p1.X, p1.Y, p2.X, p2.Y);
+                        }
+
+                        textBox1.AppendText(output);
+                    }
+                }
+
+                
+            }
+
+            if (!isCameraMode)
+            {
+                pictureBox1.Image = nonIndexedBitmap;
+            }
+
         }
 
         public void CaptureVideo(DsDevice device)
@@ -625,6 +674,11 @@ namespace BarcodeReaderApp
                 });
             }
             return 0;
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
