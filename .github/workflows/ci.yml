@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build DirectShow webcam reader (net48)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Restore packages.config
+        run: nuget restore packages.config -PackagesDirectory packages
+
+      - name: Build
+        run: msbuild BarcodeReaderApp.csproj /p:Configuration=Release /p:Platform=AnyCPU /verbosity:minimal
